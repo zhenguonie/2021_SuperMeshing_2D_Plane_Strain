@@ -1,3 +1,3 @@
-保存模型训练得到weight参数文件
+Save the weight parameters got from the training model
 
-每10个epoch保存一次，并保存得到最小loss的参数
+Save every 10 epochs, and the weight parameters with minimum loss when the train is completed.
