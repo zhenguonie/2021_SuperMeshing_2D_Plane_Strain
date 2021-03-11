@@ -1,14 +1,14 @@
  
-### 数据集下载
+### Dataset Download
 
-本工作训练所用全部数据集可从以下链接处获取：
+The dataset used in this work is accessible at：
 
-链接：[https://pan.baidu.com/s/1eM8OxrYB3qogNtaNgqNxtA ](https://pan.baidu.com/s/1eM8OxrYB3qogNtaNgqNxtA)
+Link：[https://pan.baidu.com/s/1eM8OxrYB3qogNtaNgqNxtA ](https://pan.baidu.com/s/1eM8OxrYB3qogNtaNgqNxtA)
 
-提取码：dd6n
+Extraction code：dd6n
 
-### 数据集展示
+### Dataset Introduction
 
-该数据集共包含3240组数据，每组数据由四种不同网格密度的二维平面应变问题应力场组成，四种网格密度分别为32x32，64x64，128x128和256x256。
+This dataset contains a total of 3240 pairs of data. Each pair of data is composed of 4 images with different resolutions, which represent the von-mises stress field calculated by FEM with four mesh densities 24x24, 48x48, 128x128 and 256x256.
 
 ![dataset samples](https://i.loli.net/2021/03/11/XR84QkVbG6SteZv.png)
