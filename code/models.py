@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import math
 
 
 class DenseLayer(nn.Module):
@@ -49,9 +50,9 @@ class RDN(nn.Module):
 
         # up-sampling
         assert 2 <= scale_factor <= 8
-        if scale_factor == 2 or scale_factor == 4 or scale_factor == 8:
+        if math.modf(math.log2(scale_factor))[0] == 0:
             self.upscale = []
-            for _ in range(scale_factor // 2 - 1):
+            for _ in range(int(math.log2(scale_factor))):
                 self.upscale.extend([nn.Conv2d(self.G0, self.G0 * (2 ** 2), kernel_size=3, padding=3 // 2),
                                      nn.PixelShuffle(2)])
             self.upscale = nn.Sequential(*self.upscale)
