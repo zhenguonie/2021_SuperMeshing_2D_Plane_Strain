@@ -3,6 +3,11 @@ import numpy as np
 import os
 
 
+def remove_file(file_path):
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
 def convert_rgb_to_y(img, dim_order='hwc'):
     if dim_order == 'hwc':
         return 16. + (64.738 * img[..., 0] + 129.057 * img[..., 1] + 25.064 * img[..., 2]) / 256.
@@ -10,10 +15,18 @@ def convert_rgb_to_y(img, dim_order='hwc'):
         return 16. + (64.738 * img[0] + 129.057 * img[1] + 25.064 * img[2]) / 256.
 
 
+def preprocess(img, device):
+    img = np.array(img).astype(np.float32)
+    ycbcr = convert_rgb_to_y(img)
+    x = ycbcr[..., 0] / 255.
+    x = torch.from_numpy(x).to(device)
+    x = x.unsqueeze(0).unsqueeze(0)
+    return x, ycbcr
+
+
 def denormalize(img, min_max):
     min_ = min_max[2].type(torch.cuda.FloatTensor)
     max_ = min_max[3].type(torch.cuda.FloatTensor)
-    # print(img.dtype, min_.dtype, max_.dtype)
     img = img.mul(max_).clamp(int(min_.cpu().numpy()), int(max_.cpu().numpy()))
     return img
 
@@ -21,24 +34,8 @@ def denormalize(img, min_max):
 def denormalize_test(img, min_max):
     min_ = min_max[2]
     max_ = min_max[3]
-    # print(img.dtype, min_.dtype, max_.dtype)
     img = img.mul(max_).clamp(int(min_), int(max_))
     return img
-
-
-def preprocess(img, device):
-    img = np.array(img).astype(np.float32)
-    ycbcr = convert_rgb_to_ycbcr(img)
-    x = ycbcr[..., 0]
-    x /= 255.
-    x = torch.from_numpy(x).to(device)
-    x = x.unsqueeze(0).unsqueeze(0)
-    return x, ycbcr
-
-
-def remove_file(file_path):
-    if os.path.exists(file_path):
-        os.remove(file_path)
 
 
 def calc_psnr(img1, img2, max_=255.0, min_=0.0):
