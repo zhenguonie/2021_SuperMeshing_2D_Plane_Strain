@@ -18,27 +18,32 @@ from utils import AverageMeter, calc_psnr, convert_rgb_to_y, denormalize
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train-file', type=str, default="BLAH_BLAH/DIV2K_x4.h5")
-    parser.add_argument('--eval-file', type=str, default="BLAH_BLAH/Set5_x4.h5")
-    parser.add_argument('--outputs-dir', type=str, default="./ilk/2d_mises")
-    parser.add_argument('--weights-file', type=str)
+    parser.add_argument('--input-file', type=str, default="/home/breeze/xuhanding/data/stress_32.csv")
+    parser.add_argument('--label-file', type=str, default="/home/breeze/xuhanding/data/stress_128.csv")
+    parser.add_argument('--model-save-path', type=str, default="./ilk/2d_mises")
+    parser.add_argument('--result-path', type=str, default="./result/2d_mises")
     parser.add_argument('--num-features', type=int, default=64)
     parser.add_argument('--growth-rate', type=int, default=64)
-    parser.add_argument('--num-blocks', type=int, default=16)
+    parser.add_argument('--num-blocks', type=int, default=8)
     parser.add_argument('--num-layers', type=int, default=8)
     parser.add_argument('--scale', type=int, default=8)
     parser.add_argument('--patch-size', type=int, default=32)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--learning-rate', type=float, default=1e-4)
     parser.add_argument('--batch-size', type=int, default=16)
     parser.add_argument('--num-epochs', type=int, default=800)
     parser.add_argument('--num-workers', type=int, default=8)
     parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
 
-    args.outputs_dir = os.path.join(args.outputs_dir, 'x{}'.format(args.scale))
+    args.model_save_path = os.path.join(args.model_save_path, 'x{}'.format(args.scale))
 
-    if not os.path.exists(args.outputs_dir):
-        os.makedirs(args.outputs_dir)
+    if not os.path.exists(args.model_save_path):
+        os.makedirs(args.model_save_path)
+    
+    args.result_path = os.path.join(args.result_path, 'x{}'.format(args.scale))
+
+    if not os.path.exists(args.result_path):
+        os.makedirs(args.result_path)
 
     cudnn.benchmark = True
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -52,32 +57,18 @@ if __name__ == '__main__':
                 num_blocks=args.num_blocks,
                 num_layers=args.num_layers).to(device)
 
-    if args.weights_file is not None:
-        state_dict = model.state_dict()
-        for n, p in torch.load(args.weights_file, map_location=lambda storage, loc: storage).items():
-            if n in state_dict.keys():
-                state_dict[n].copy_(p)
-            else:
-                raise KeyError(n)
-
     criterion = nn.L1Loss()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), learning_rate=args.learning_rate)
 
-    # 需要修改
-    path_1x = '/home/breeze/xuhanding/data/stress_32.csv'
-    path_8x = '/home/breeze/xuhanding/data/stress_256.csv'
-    train_ratio = 0.8
     Inputs_train, Targets_train, Inputs_valid, Targets_valid, Min_Max = \
-        data_load(path_1x, path_8x, train_ratio)
+        data_load(args.input_path, args.label_path)
 
-    # train_dataset = TrainDataset(args.train_file, patch_size=args.patch_size, scale=args.scale)
     train_dataset = TrainDataset(Inputs_train, Targets_train, scale=args.scale)
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=args.batch_size,
                                   shuffle=True,
                                   num_workers=args.num_workers,
                                   pin_memory=True)
-    # eval_dataset = EvalDataset(args.eval_file)
     eval_dataset = EvalDataset(Inputs_valid, Targets_valid, Min_Max)
     eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1)
 
@@ -89,7 +80,7 @@ if __name__ == '__main__':
 
     for epoch in range(args.num_epochs):
         for param_group in optimizer.param_groups:
-            param_group['lr'] = args.lr * (0.1 ** (epoch // int(args.num_epochs * 0.8)))
+            param_group['learning_rate'] = args.learning_rate * (0.1 ** (epoch // int(args.num_epochs * 0.8)))
 
         model.train()
         epoch_losses = AverageMeter()
@@ -117,13 +108,13 @@ if __name__ == '__main__':
                 t.update(len(inputs))
         
         LOSSES.append(epoch_losses.avg)
-        # 需修改
-        with open('./result/2d_mises/x{}/loss.txt'.format(args.scale), 'a') as f:
+        
+        with open(args.result_path + '/loss.txt', 'a') as f:
             f.write(str(epoch_losses.avg))
             f.write('\n')
 
         if (epoch + 1) % 10 == 0:
-            torch.save(model.state_dict(), os.path.join(args.outputs_dir, 'epoch_{}.pth'.format(epoch)))
+            torch.save(model.state_dict(), os.path.join(args.model_save_path, 'epoch_{}.pth'.format(epoch)))
 
         model.eval()
         epoch_psnr = AverageMeter()
@@ -136,9 +127,6 @@ if __name__ == '__main__':
 
             with torch.no_grad():
                 preds = model(inputs)
-
-            # preds = convert_rgb_to_y(denormalize(preds.squeeze(0)), dim_order='chw')
-            # labels = convert_rgb_to_y(denormalize(labels.squeeze(0)), dim_order='chw')
 
             preds = denormalize(torch.squeeze(preds), min_max)
             labels = denormalize(torch.squeeze(labels), min_max)
@@ -158,8 +146,9 @@ if __name__ == '__main__':
             best_weights = copy.deepcopy(model.state_dict())
 
     print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
-    torch.save(best_weights, os.path.join(args.outputs_dir, 'best.pth'))
+    torch.save(best_weights, os.path.join(args.model_save_path, 'best.pth'))
 
     LOSSES = np.array(LOSSES)
     plt.plot(LOSSES)
+    plt.savefig(args.result_path + '/loss.png')
     plt.show()
