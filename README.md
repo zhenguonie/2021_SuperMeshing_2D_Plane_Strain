@@ -18,4 +18,4 @@ If you want to test different scaling factors, please change the --scale argumen
 
 The result floder includes the reslt of experiment.
 
-![test result](https://s2.loli.net/2021/12/13/f4AuyX5B7OS1li8.png =400x500)
+![test result](https://s2.loli.net/2021/12/13/f4AuyX5B7OS1li8.png)
