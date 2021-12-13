@@ -4,7 +4,7 @@ This is the implementation of the SuperMeshingNet, for paper: SuperMehsingNet: A
 
 The architecture of the SuperMeshingNet is shown in figure.
 
-![SuperMeshingNet architecture](https://i.loli.net/2021/03/11/6d1YlxkwDayTrJI.png)
+![SuperMeshingNet architecture](https://s2.loli.net/2021/12/13/mUZhL4EgJqHPy9z.png)
 
 To train the model, please download the project and run:
 
@@ -18,4 +18,4 @@ If you want to test different scaling factors, please change the --scale argumen
 
 The result floder includes the reslt of experiment.
 
-![test result](https://i.loli.net/2021/03/11/txHNY1R59gvyX3M.png)
+![test result](https://s2.loli.net/2021/12/13/mUZhL4EgJqHPy9z.png)
