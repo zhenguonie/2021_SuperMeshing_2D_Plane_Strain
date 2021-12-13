@@ -1,4 +1,5 @@
 import torch
+from torch.nn import L1Loss
 import numpy as np
 import os
 
@@ -27,14 +28,14 @@ def preprocess(img, device):
 def denormalize(img, min_max):
     min_ = min_max[2].type(torch.cuda.FloatTensor)
     max_ = min_max[3].type(torch.cuda.FloatTensor)
-    img = img.mul(max_).clamp(int(min_.cpu().numpy()), int(max_.cpu().numpy()))
+    img = img.mul(max_ - min_).add(min_).clamp(int(min_), int(max_))
     return img
 
 
 def denormalize_test(img, min_max):
     min_ = min_max[2]
     max_ = min_max[3]
-    img = img.mul(max_).clamp(int(min_), int(max_))
+    img = img.mul(max_ - min_).add(min_).clamp(int(min_), int(max_))
     return img
 
 
@@ -45,6 +46,13 @@ def calc_psnr(img1, img2, max_=255.0, min_=0.0):
 def calc_mre(img1, img2, delta=0.01):
     diff = (img1 - img2).abs()
     return (diff / (delta + img1)).mean()
+
+
+def calc_mre2(img1, img2):
+    loss_fn = L1Loss()
+    mae = loss_fn(img1, img2)
+    avg_stress = img1.mean()
+    return mae / avg_stress
 
 
 def calc_max_diff(img1, img2):
